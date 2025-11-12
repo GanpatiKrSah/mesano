@@ -16,19 +16,19 @@ function getKem(level) {
 }
 
 // === KYBER KEM FUNCTIONS ===
-export async function generateKeyPair(level = 1024) {
+export async function generateKeyPair(level = 768) {
   const kem = getKem(level);
   const [publicKey, secretKey] = await kem.generateKeyPair();
   return { publicKey, secretKey };
 }
 
-export async function encapsulate(publicKey, level = 1024) {
+export async function encapsulate(publicKey, level = 768) {
   const kem = getKem(level);
   const [ciphertext, sharedSecret] = await kem.encap(publicKey);
   return { ciphertext, sharedSecret };
 }
 
-export async function decapsulate(ciphertext, secretKey, level = 1024) {
+export async function decapsulate(ciphertext, secretKey, level = 768) {
   const kem = getKem(level);
   const sharedSecret = await kem.decap(ciphertext, secretKey);
   return { sharedSecret };
