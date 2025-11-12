@@ -8,9 +8,9 @@ import {
   decryptMessage,
 } from "./algorithms/kyber.js";
 
-// Parse --level argument (defaults to 1024)
+// Parse --level argument (defaults to 768)
 const arg = process.argv.find((x) => x.startsWith("--level="));
-const level = arg ? parseInt(arg.split("=")[1]) : 1024;
+const level = arg ? parseInt(arg.split("=")[1]) : 768;
 
 function toHex(buf, limit = 64) {
   if (!buf) return "(undefined)";
