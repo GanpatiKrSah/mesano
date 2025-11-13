@@ -1,72 +1,53 @@
-// src/main.js
-import readline from "readline";
-import {
-  generateKeyPair,
-  encapsulate,
-  decapsulate,
-  encryptMessage,
-  decryptMessage,
-} from "./algorithms/kyber.js";
+import { generateSharedKey } from '../scripts/shared-key-generator.js';
+import readline from 'readline';
 
-// Parse --level argument (defaults to 768)
-const arg = process.argv.find((x) => x.startsWith("--level="));
-const level = arg ? parseInt(arg.split("=")[1]) : 768;
+console.log('\n256-bit Shared Key Generator');
+console.log('Type "exit" to quit\n');
 
-function toHex(buf, limit = 64) {
-  if (!buf) return "(undefined)";
-  const str = Buffer.from(buf).toString("hex");
-  return str.length > limit ? str.slice(0, limit) + "..." : str;
-}
-
-async function run() {
-  console.log(`\n=== CRYSTALS-KYBER (ML-KEM-${level}) Secure Encryption Demo ===\n`);
-
-  // Input from terminal
-  const rl = readline.createInterface({
+const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-  });
+    prompt: 'Password: '
+});
 
-  const message = await new Promise((resolve) =>
-    rl.question("Enter your message: ", (ans) => resolve(ans))
-  );
-  rl.close();
+rl.prompt();
 
-  // Generate key pair
-  const { publicKey, secretKey } = await generateKeyPair(level);
-  console.log("🔑 Generated Kyber key pair:");
-  console.log("Public Key:", toHex(publicKey));
-  console.log("Secret Key:", toHex(secretKey));
+rl.on('line', (input) => {
+    const password = input.trim();
 
-  // Encapsulate (create shared secret)
-  const { ciphertext, sharedSecret } = await encapsulate(publicKey, level);
-  console.log("\n📦 Encapsulation complete:");
-  console.log("Ciphertext:", toHex(ciphertext));
-  console.log("Shared Secret (sender):", toHex(sharedSecret, 128));
+    // Handle exit command
+    if (password.toLowerCase() === 'exit' || password.toLowerCase() === 'quit') {
+        console.log('\nGoodbye!\n');
+        rl.close();
+        return;
+    }
 
-  // Encrypt message using shared secret
-  const { iv, tag, encrypted } = encryptMessage(message, sharedSecret);
-  console.log("\n🔒 AES-256-GCM Encryption:");
-  console.log("Encrypted Message:", toHex(encrypted, 128));
-  console.log("IV:", toHex(iv));
-  console.log("Auth Tag:", toHex(tag));
+    // Skip empty input
+    if (!password) {
+        console.log('Empty input\n');
+        rl.prompt();
+        return;
+    }
 
-  // Receiver decapsulates ciphertext to recover same shared secret
-  const { sharedSecret: recvSecret } = await decapsulate(ciphertext, secretKey, level);
-  console.log("\n🔓 Decapsulation complete:");
-  console.log("Shared Secret (receiver):", toHex(recvSecret, 128));
+    // Generate shared key
+    const { sharedKey, keyHash } = generateSharedKey(password);
 
-  // Decrypt the message
-  const decrypted = decryptMessage(encrypted, iv, tag, recvSecret);
-  console.log("\n💬 Decrypted Message:", decrypted);
+    // Display only shared key and hash
+    if (sharedKey === -1) {
+        console.log('Error: Too short (min 20 bytes)\n');
+    } else if (sharedKey === 2) {
+        console.log('Error: Too long (max 32 bytes)\n');
+    } else if (Buffer.isBuffer(sharedKey)) {
+        console.log('\nShared Key:');
+        console.log(sharedKey.toString('hex'));
+        console.log('\nShared Key Hash:');
+        console.log(keyHash.toString('hex'));
+        console.log('');
+    }
 
-  const match = message === decrypted;
-  console.log("\n✅ Match:", match ? "Yes (Perfect!)" : "No (Something’s wrong)");
+    rl.prompt();
+});
 
-  console.log("\n--- Summary ---");
-  console.log("Algorithm Level: ML-KEM-" + level);
-  console.log("Security Strength:", level === 512 ? "≈ AES-128" : level === 768 ? "≈ AES-192" : "≈ AES-256");
-  console.log("----------------\n");
-}
-
-run().catch((err) => console.error("❌ Error:", err));
+rl.on('close', () => {
+    process.exit(0);
+});
