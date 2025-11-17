@@ -7,7 +7,7 @@ import { generateSharedKey } from "../scripts/shared-key-generator.js";
 
 // === CONFIG ===
 
-// ML-KEM level
+// ML-KEM levelgit branch
 const KYBER_LEVEL = 768;
 
 // Server public key will be provided as BASE64 string.
